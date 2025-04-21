@@ -9,6 +9,6 @@ scipy
 geopy
 gdown
 folium
-
+streamlit-folium
 
 
