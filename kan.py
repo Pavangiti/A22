@@ -3,17 +3,34 @@ import sqlite3
 import pandas as pd
 import plotly.express as px
 import hashlib
+import gdown
+import urllib.parse
 import os
 from statsmodels.tsa.arima.model import ARIMA  # ARIMA Model for forecasting
 
 # ----------------- PAGE CONFIGURATION -----------------
 st.set_page_config(page_title="Predictive Healthcare Analytics", layout="wide")
 
+
 # ----------------- DATABASE & FILE PATH SETUP -----------------
 DB_FILE = "vaccination_data.db"
 USER_DB = "users.db"
-DATASET_PATH = "/Users/pavansappidi/Desktop/MRP/data2.xlsx"
 
+# Google Sheet ID and Sheet Name
+sheet_id = "1hJEb7aMjrD-EfAoN9jdhwBK2m9o0U-mh"
+sheet_name = "not_vaccinated_analysis (3)"
+encoded_sheet_name = urllib.parse.quote(sheet_name)
+
+# Build URL safely
+DATASET_URL = f"https://docs.google.com/spreadsheets/d/{sheet_id}/gviz/tq?tqx=out:csv&sheet={encoded_sheet_name}"
+
+# Load the Google Sheet into a DataFrame
+try:
+    df = pd.read_csv(DATASET_URL)
+    st.success("Dataset loaded successfully from Google Sheets.")
+except Exception as e:
+    st.error(f"Error loading dataset: {e}")
+    df = pd.DataFrame()  # fallback to empty DataFrame
 # Function to create database connection
 def create_connection(db_path):
     return sqlite3.connect(db_path)
@@ -60,14 +77,20 @@ def is_data_present():
 # Function to load dataset into the database (only if empty)
 def load_data_into_db():
     if not is_data_present():
-        if os.path.exists(DATASET_PATH):
-            df = pd.read_excel(DATASET_PATH)  # Load from the specified path
+        try:
+            df = pd.read_csv(DATASET_URL)  # Load directly from Google Sheets
             conn = create_connection(DB_FILE)
             df.to_sql("vaccination_data", conn, if_exists="replace", index=False)
             conn.close()
             print("✅ Data loaded into the database successfully!")
-        else:
-            print("❌ Error: File not found at the specified path!")
+        except Exception as e:
+            print(f"❌ Error loading dataset: {e}")
+
+
+# Initialize databases
+setup_user_database()
+setup_vaccination_database()
+load_data_into_db()
 
 # Initialize databases
 setup_user_database()
